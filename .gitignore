@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Logs
+*.log
+
+# Документы
+*.pdf
+*.txt
+*.docx
+*.pptx
+*.xlsx
+*.xls
+*.csv
+*.json
+*.yaml
