@@ -4,6 +4,8 @@ from src.embedded.custom_embeddings import CustomEmbeddings
 from utils.mylogger import Logger
 from config import RAG_CONFIG
 import asyncio
+from typing import List, Dict, Any
+from langchain.schema import Document
 
 logger = Logger('Retriever', 'logs/rag.log')
 
@@ -34,30 +36,54 @@ class Retriever:
         self.embedding_model = CustomEmbeddings(llm.sentence_transformer)
         logger.debug("Компоненты Retriever успешно инициализированы")
 
-    async def get_relevant_documents_async(self, query: str):
+    async def get_relevant_documents_async(self, query: str, max_retries: int = 3) -> List[Document]:
         """
         Асинхронно получает релевантные документы для запроса.
         
         Args:
             query (str): Текстовый запрос пользователя
+            max_retries (int): Максимальное количество попыток при ошибке
             
         Returns:
             List[Document]: Список релевантных документов
         """
-        try:
-            logger.debug(f"Асинхронный поиск документов для запроса: {query[:100]}...")
-            # Используем to_thread для асинхронного выполнения синхронного метода
-            documents = await asyncio.to_thread(
-                self.llm.retriever.get_relevant_documents,
-                query
-            )
-            logger.info(f"Найдено {len(documents)} релевантных документов")
-            return documents
-        except Exception as e:
-            logger.error(f"Ошибка при поиске документов: {str(e)}")
-            raise
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Попытка {attempt + 1}/{max_retries} поиска документов для запроса: {query[:100]}...")
+                
+                # Получаем эмбеддинг запроса
+                query_embedding = self.embedding_model.embed_query(query)
+                
+                # Используем PostgreSQL для поиска похожих документов
+                if self.vectorstore and hasattr(self.vectorstore, 'postgres_db'):
+                    results = await self.vectorstore.postgres_db.find_similar_async(
+                        query_embedding,
+                        limit=min(RAG_CONFIG["search_kwargs"]["k"], 10)
+                    )
+                    
+                    # Преобразуем результаты в формат Document
+                    documents = []
+                    for content, metadata, similarity in results:
+                        doc = Document(
+                            page_content=content,
+                            metadata=metadata
+                        )
+                        documents.append(doc)
+                else:
+                    raise ValueError("Векторное хранилище не инициализировано или не содержит PostgreSQL")
+                
+                logger.info(f"Найдено {len(documents)} релевантных документов")
+                return documents
+                
+            except Exception as e:
+                logger.error(f"Ошибка при поиске документов (попытка {attempt + 1}): {str(e)}")
+                if attempt < max_retries - 1:
+                    # Добавляем задержку перед следующей попыткой
+                    await asyncio.sleep(1)
+                else:
+                    raise
 
-    def get_relevant_documents(self, query: str):
+    def get_relevant_documents(self, query: str) -> List[Document]:
         """
         Синхронная обертка для получения релевантных документов
         """
@@ -91,7 +117,10 @@ class Retriever:
                 # Используем векторное хранилище из llm, а не из vectorstore
                 self.llm.base_retriever = self.llm.vectorstore.as_retriever(
                     search_type="similarity_score_threshold",
-                    search_kwargs=RAG_CONFIG["search_kwargs"]
+                    search_kwargs={
+                        **RAG_CONFIG["search_kwargs"],
+                        "k": min(RAG_CONFIG["search_kwargs"]["k"], 10)  # Ограничиваем количество результатов
+                    }
                 )
                 logger.info("Базовый ретривер успешно настроен")
             except Exception as e:
@@ -141,4 +170,3 @@ class Retriever:
         Синхронная обертка для настройки системы ретриверов
         """
         asyncio.run(self.setup_retrievers_async())
-

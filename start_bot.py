@@ -1,20 +1,18 @@
-import os
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.markdown import hbold, hitalic
 import nest_asyncio
 from typing import Dict, List, Set
-
-from start_rag import query_llm, docs_loader
-from config import MAX_HISTORY, DOCS_DIR, BOT_TOKEN
+from setting.setting_rag import query_llm
+from config import MAX_HISTORY, BOT_TOKEN
 from utils.mylogger import Logger
 
 
-# избегаем ошибки вложенния асинхронных циклов
+# избегаем ошибки вложенния асинхронных event loops
 nest_asyncio.apply()
 # Настройка логов
-logger = Logger("philosopher", "logs/rag.log")
+logger = Logger("philosoph", "logs/rag.log")
 
 # Инициализация бота
 bot = Bot(token=BOT_TOKEN)
@@ -114,12 +112,12 @@ async def help_command(message: types.Message):
     logger.info(f"Пользователь {message.from_user.id} запросил помощь")
     help_text = (
         f"{hbold('Помощь по боту:')}\n\n"
-        "Задай вопрос по философии /ask\n"
+        "Задай вопрос по философии /ask 🤔\n"
         f"{hitalic('Пример:')}\n"
-        "/ask Когда уже наконец восстанет Ктулху, а..?\n\n"
-        "Если твой вопрос не связан с философией, то я не смогу ответить на него.\n"
-        f"Я сохраняю историю последних {MAX_HISTORY} сообщений для контекста.\n"
-        "Ты можешь очистить историю командой /clear_history"
+        "/ask Всё - тлен..? 💭\n\n"
+        "Если твой вопрос не связан с философией, то я не смогу ответить на него. 🚫\n"
+        f"Я сохраняю историю последних {MAX_HISTORY} сообщений для контекста. 📚\n"
+        "Ты можешь очистить историю командой /clear_history 🧹"
     )
     await message.answer(
         help_text,
@@ -144,7 +142,7 @@ async def ask_command(message: types.Message):
     waiting_for_question.add(chat_id)
     
     await message.answer(
-        "Пожалуйста, задайте ваш вопрос по философии.",
+        "Ну давай, задай мне вопрос... 🤔",
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
@@ -224,7 +222,7 @@ async def handle_message(message: types.Message):
             # Если пользователь не в режиме ожидания, отправляем подсказку
             logger.info(f"Получено сообщение от пользователя {user_id} вне режима ожидания")
             await message.answer(
-                "Пожалуйста, используйте команду /ask, чтобы задать вопрос.",
+                "⚠️ Пожалуйста, используйте команду /ask, чтобы задать вопрос.",
                 reply_markup=get_main_keyboard(),
                 parse_mode="HTML"
             )
@@ -251,9 +249,7 @@ async def main():
     Инициализирует необходимые компоненты и запускает поллинг.
     """
     try:
-        logger.info("Инициализация бота...")
-        docs_loader(DOCS_DIR)
-        logger.info("Документы загружены, запуск поллинга...")
+        logger.info("Инициализация бота...Запуск поллинга...")
         await dp.start_polling(bot)
     except Exception as e:
         error_msg = f"Ошибка при запуске бота: {str(e)}"

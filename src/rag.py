@@ -160,7 +160,6 @@ class AdvancedRAG:
                 self.retriever.get_relevant_documents,
                 question
             )
-            
             # Асинхронное реранжирование документов
             reranked_docs = await self.promts.rerank_documents_async(question, relevant_docs)
             

@@ -1,7 +1,6 @@
 from typing import List
 import os
 import asyncio
-import aiofiles
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 
