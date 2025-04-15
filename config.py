@@ -11,17 +11,17 @@ class Config_LLM:
     temperature = float(os.getenv("LLM_TEMPERATURE", "0.5"))
 
 # Путь к директории с документами
-DOCS_DIR = os.getenv("DOCS_DIR", os.path.join("C:", "Users", "Lenovo", "Desktop", "ИФ", "писянина", "ФМ", "1 глава - математика в целом"))
+DOCS_DIR = os.getenv("DOCS_DIR", os.path.join("C:", "Users", "Lenovo", "Desktop", "ИФ", "писянина", "ФМ", "2. теория множеств"))
 
 # Размерность эмбеддингов модели LaBSE-ru-turbo
 EMBEDDING_DIMENSION = 768
 
 # Конфигурация RAG
 RAG_CONFIG = {
-    'similarity_threshold': float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.5")),
+    'similarity_threshold': float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.7")),
     'search_kwargs': {
         'k': int(os.getenv("RAG_SEARCH_K", "20")),
-        'score_threshold': float(os.getenv("RAG_SCORE_THRESHOLD", "0.5"))
+        'score_threshold': float(os.getenv("RAG_SCORE_THRESHOLD", "0.7"))
     },
     'text_splitter': {
         'chunk_size': int(os.getenv("RAG_CHUNK_SIZE", "384")),
