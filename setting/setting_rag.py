@@ -1,9 +1,9 @@
 import asyncio
 from typing import List
 import os
-from src.rag import AdvancedRAG
-from src.handle_dir_and_files.load_documents import LoadDocuments
-from src.handle_dir_and_files.process_documents import ProcessDocuments
+from rag.rag import AdvancedRAG
+from rag.handle_dir_and_files.load_documents import LoadDocuments
+from rag.handle_dir_and_files.process_documents import ProcessDocuments
 from utils.mylogger import Logger
 from config import Config_LLM
 

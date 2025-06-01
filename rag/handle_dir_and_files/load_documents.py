@@ -5,8 +5,8 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 
 from utils.mylogger import Logger
-from src.handle_dir_and_files.check_dir import CheckDirExists
-from src.handle_dir_and_files.check_file import CheckFile
+from rag.handle_dir_and_files.check_dir import CheckDirExists
+from rag.handle_dir_and_files.check_file import CheckFile
 
 logger = Logger('LoadDocuments', 'logs/rag.log')
 

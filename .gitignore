@@ -16,7 +16,6 @@ venv/
 
 # Документы
 *.pdf
-*.txt
 *.docx
 *.pptx
 *.xlsx

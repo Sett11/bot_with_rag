@@ -1,6 +1,6 @@
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import EmbeddingsFilter
-from src.embedded.custom_embeddings import CustomEmbeddings
+from rag.embedded.custom_embeddings import CustomEmbeddings
 from utils.mylogger import Logger
 from config import RAG_CONFIG
 import asyncio

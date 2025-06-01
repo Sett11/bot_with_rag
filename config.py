@@ -11,7 +11,7 @@ class Config_LLM:
     temperature = float(os.getenv("LLM_TEMPERATURE", "0.5"))
 
 # Путь к директории с документами
-DOCS_DIR = os.getenv("DOCS_DIR", os.path.join("C:", "Users", "Lenovo", "Desktop", "ИФ", "писянина", "ФМ", "2. теория множеств"))
+DOCS_DIR = os.getenv("DOCS_DIR", "docs")
 
 # Размерность эмбеддингов модели LaBSE-ru-turbo
 EMBEDDING_DIMENSION = 768
@@ -39,11 +39,14 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 BOT_NAME = os.getenv("BOT_NAME")
 BOT_DESCRIPTION = os.getenv("BOT_DESCRIPTION")
 
-# Параметры подключения к PostgreSQL в Docker
+# Параметры подключения к PostgreSQL
 conn_params = {
-    'dbname': 'vector_db',
-    'host': 'localhost',
-    'port': '5432',
-    'user': 'postgres',
-    'password': 'vector'
+    'dbname': os.getenv('POSTGRES_DB', 'vector_db'),
+    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+    'port': os.getenv('POSTGRES_PORT', '5432'),
+    'user': os.getenv('POSTGRES_USER', 'postgres'),
+    'password': os.getenv('POSTGRES_PASSWORD', 'vector')
 }
+
+# Строка подключения к PostgreSQL
+POSTGRES_CONNECTION_STRING = f"postgresql://{conn_params['user']}:{conn_params['password']}@{conn_params['host']}:{conn_params['port']}/{conn_params['dbname']}"

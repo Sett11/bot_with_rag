@@ -7,10 +7,10 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 import torch
 # локальные библиотеки
 from utils.mylogger import Logger
-from src.retrieval.retriever import Retriever
-from src.date.vector_store import VectorStore
-from src.promts.promts import Promts
-from src.format_context.format_context import FormatContext
+from rag.retrieval.retriever import Retriever
+from rag.date.vector_store import VectorStore
+from rag.promts.promts import Promts
+from rag.format_context.format_context import FormatContext
 import asyncio
 # Настройка логирования
 logger = Logger('RAG', 'logs/rag.log')

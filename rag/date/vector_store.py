@@ -6,8 +6,8 @@ import numpy as np
 import asyncio
 
 from utils.mylogger import Logger
-from src.embedded.custom_embeddings import CustomEmbeddings
-from src.date.postgres_db import PostgresDB
+from rag.embedded.custom_embeddings import CustomEmbeddings
+from rag.date.postgres_db import PostgresDB
 from config import RAG_CONFIG
 
 # Инициализация логгера для отслеживания работы векторного хранилища
