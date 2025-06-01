@@ -179,7 +179,7 @@ class LoadDocuments:
             if not documents:
                 error_msg = "Не удалось загрузить ни одного документа"
                 logger.error(error_msg)
-                raise FileNotFoundError(error_msg)
+                # raise FileNotFoundError(error_msg)
 
             logger.info(f"Асинхронная загрузка завершена. Загружено: {loaded_files}, пропущено: {skipped_files}")
             return documents

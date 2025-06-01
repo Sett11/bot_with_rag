@@ -17,16 +17,19 @@ class ProcessDocuments:
     
     Attributes:
         documents (List[Document]): Список документов для обработки
+        llm: Экземпляр класса AdvancedRAG
     """
-    def __init__(self, documents: List[Document]) -> None:
+    def __init__(self, documents: List[Document], llm=None) -> None:
         """
         Инициализация класса ProcessDocuments.
         
         Args:
             documents (List[Document]): Список документов для обработки
+            llm: Экземпляр класса AdvancedRAG
         """
         logger.info("Инициализация класса ProcessDocuments")
         self.documents = documents
+        self.llm = llm
         logger.debug(f"Получено документов для обработки: {len(documents)}")
 
     async def _process_single_document(self, doc: Document) -> Document:
@@ -59,40 +62,54 @@ class ProcessDocuments:
             logger.error(f"Ошибка при обработке документа: {str(e)}")
             return None
 
-    async def process_documents_async(self) -> List[Document]:
+    async def process_documents_async(self, documents: List[Document]) -> List[Document]:
         """
-        Асинхронная обработка и подготовка документов для индексации.
+        Асинхронная обработка списка документов.
+
+        Args:
+            documents (List[Document]): Список документов для обработки
+
+        Returns:
+            List[Document]: Список обработанных документов
+
+        Raises:
+            ValueError: Если список документов пуст при загрузке документов
+            Exception: При ошибках обработки
         """
-        logger.info("Начало асинхронной обработки документов")
-        
-        if not self.documents:
-            error_msg = "Список документов не может быть пустым"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+        if not documents:
+            return []
             
         try:
-            # Создаем задачи для асинхронной обработки каждого документа
-            tasks = [self._process_single_document(doc) for doc in self.documents]
-            results = await asyncio.gather(*tasks)
-            
-            # Фильтруем None значения и подсчитываем статистику
-            processed_docs = [doc for doc in results if doc is not None]
-            skipped_docs = len(results) - len(processed_docs)
-            
-            if not processed_docs:
-                error_msg = "Не удалось обработать ни одного документа"
-                logger.error(error_msg)
-                raise ValueError(error_msg)
+            processed_docs = []
+            for doc in documents:
+                try:
+                    # Очищаем текст от лишних пробелов и переносов
+                    cleaned_text = await asyncio.to_thread(
+                        lambda: " ".join(doc.page_content.split())
+                    )
+                    
+                    # Создаем новый документ с очищенным текстом
+                    processed_doc = Document(
+                        page_content=cleaned_text,
+                        metadata=doc.metadata
+                    )
+                    processed_docs.append(processed_doc)
+                    
+                except Exception as e:
+                    logger.error(f"Ошибка при обработке документа: {str(e)}")
+                    continue
+                    
+            if not processed_docs and self.llm.is_loading_documents:
+                raise ValueError("Не удалось обработать ни один документ при загрузке")
                 
-            logger.info(f"Асинхронная обработка завершена. Обработано: {len(processed_docs)}, пропущено: {skipped_docs}")
             return processed_docs
             
         except Exception as e:
-            logger.error(f"Критическая ошибка при асинхронной обработке документов: {str(e)}")
+            logger.error(f"Ошибка при обработке документов: {str(e)}")
             raise
 
     def process_documents(self) -> List[Document]:
         """
         Синхронная обработка документов (для обратной совместимости).
         """
-        return asyncio.run(self.process_documents_async())
+        return asyncio.run(self.process_documents_async(self.documents))

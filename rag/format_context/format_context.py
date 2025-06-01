@@ -55,11 +55,11 @@ class FormatContext:
             str: Отформатированный контекст для LLM
 
         Raises:
-            ValueError: Если список документов пуст
+            ValueError: Если список документов пуст при загрузке документов
             Exception: При ошибках форматирования
         """
         if not documents:
-            raise ValueError("Список документов не может быть пустым")
+            return "Не найдено релевантных документов для ответа на вопрос"
             
         try:
             # Очищаем и подготавливаем тексты документов
@@ -94,28 +94,6 @@ class FormatContext:
             logger.error(f"Ошибка при форматировании контекста: {str(e)}")
             raise
 
-    def format_context(self, documents: List[Document]) -> str:
-        """
-        Синхронная обертка для форматирования контекста
-        """
-        return asyncio.run(self.format_context_async(documents))
-
-    async def _clean_text_async(self, text: str) -> str:
-        """
-        Асинхронная очистка текста от лишних пробелов и переносов.
-        """
-        # Очищаем текст от лишних пробелов и переносов
-        cleaned_text = await asyncio.to_thread(
-            lambda: " ".join(text.split())
-        )
-        return cleaned_text
-
-    def _clean_text(self, text: str) -> str:
-        """
-        Синхронная обертка для очистки текста
-        """
-        return asyncio.run(self._clean_text_async(text))
-
     def format_context(self, docs: List[Document]) -> str:
         """
         Форматирование контекста из документов для LLM.
@@ -147,11 +125,11 @@ class FormatContext:
                 с добавленными метаданными и нумерацией
 
         Raises:
-            ValueError: Если список документов пуст
+            ValueError: Если список документов пуст при загрузке документов
             Exception: При ошибках форматирования
         """
         if not docs:
-            raise ValueError("Список документов не может быть пустым")
+            return "Не найдено релевантных документов для ответа на вопрос"
         try:
             # Подготавливаем контекст
             try:
@@ -192,3 +170,19 @@ class FormatContext:
         except Exception as e:
             logger.error(f"Критическая ошибка при форматировании контекста: {str(e)}")
             raise
+
+    async def _clean_text_async(self, text: str) -> str:
+        """
+        Асинхронная очистка текста от лишних пробелов и переносов.
+        """
+        # Очищаем текст от лишних пробелов и переносов
+        cleaned_text = await asyncio.to_thread(
+            lambda: " ".join(text.split())
+        )
+        return cleaned_text
+
+    def _clean_text(self, text: str) -> str:
+        """
+        Синхронная обертка для очистки текста
+        """
+        return asyncio.run(self._clean_text_async(text))

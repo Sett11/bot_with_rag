@@ -62,6 +62,7 @@ class AdvancedRAG:
         if not base_url:
             raise ValueError("base_url не может быть пустым")
         try:
+            self.is_loading_documents = True  # Флаг для различения процесса загрузки и обработки вопроса
             # Инициализация LLM - основной модели для генерации ответов
             self.llm = ChatOpenAI(
                 model=model_name,
@@ -211,7 +212,14 @@ class AdvancedRAG:
                 logger.warning("Верификатор вернул пустой ответ")
                 return response
 
-            return self.extract_answer(verification_response.content)
+            verified_answer = self.extract_answer(verification_response.content)
+            
+            # Если верификатор вернул "OK", значит ответ корректен
+            if verified_answer.strip().upper() == "OK":
+                logger.info("Верификатор подтвердил корректность ответа")
+                return response
+                
+            return verified_answer
 
         except Exception as e:
             logger.error(f"Ошибка при верификации ответа: {str(e)}")
@@ -226,7 +234,7 @@ class AdvancedRAG:
         2. Если теги найдены, извлекает текст между ними
         3. Если теги не найдены, проверяет наличие тегов <answer> и </answer>
         4. Если теги найдены, извлекает текст между ними
-        5. Если ничего не найдено, возвращает строку "Ответ не найден"
+        5. Если ничего не найдено, возвращает исходный ответ
         
         Args:
             response (str): Полный ответ модели
@@ -241,8 +249,9 @@ class AdvancedRAG:
             start_index = response.find(start_tag)
             end_index = response.find(end_tag)
             if start_index != -1 and end_index != -1:
-                logger.info(f"Найден улучшенный ответ: {response[start_index + len(start_tag):end_index]}")
-                return response[start_index + len(start_tag):end_index]
+                answer = response[start_index + len(start_tag):end_index].strip()
+                logger.info(f"Найден улучшенный ответ: {answer}")
+                return answer
 
             # Проверяем наличие тегов <answer> и </answer>
             start_tag = "<answer>"
@@ -250,12 +259,63 @@ class AdvancedRAG:
             start_index = response.find(start_tag)
             end_index = response.find(end_tag)
             if start_index != -1 and end_index != -1:
-                logger.info(f"Найден ответ: {response[start_index + len(start_tag):end_index]}")
-                return response[start_index + len(start_tag):end_index]
-            
-            logger.info("Ответ не найден")
-            return "Ответ не найден"
-        
+                answer = response[start_index + len(start_tag):end_index].strip()
+                logger.info(f"Найден ответ: {answer}")
+                return answer
+
+            # Если теги не найдены, возвращаем исходный ответ
+            logger.info(f"Теги не найдены, возвращаем исходный ответ: {response}")
+            return response.strip()
+
         except Exception as e:
-            logger.error(f"Ошибка при извлечении точного ответа: {str(e)}")
-            return "Ответ не найден"
+            logger.error(f"Ошибка при извлечении ответа: {str(e)}")
+            return response.strip()
+
+    async def process_query_async(self, query: str) -> str:
+        """
+        Асинхронная обработка запроса пользователя.
+        
+        Args:
+            query: Текстовый запрос пользователя
+            
+        Returns:
+            str: Ответ на запрос
+        """
+        try:
+            self.is_loading_documents = False  # Устанавливаем флаг, что мы обрабатываем вопрос
+            if not query.strip():
+                return "Вопрос не может быть пустым"
+
+            # Асинхронный поиск релевантных документов через to_thread
+            relevant_docs = await asyncio.to_thread(
+                self.retriever.get_relevant_documents,
+                query
+            )
+            # Асинхронное реранжирование документов
+            reranked_docs = await self.promts.rerank_documents_async(query, relevant_docs)
+            
+            # Форматирование контекста
+            context = self.format_context.format_context(reranked_docs)
+            
+            # Асинхронная генерация ответа
+            response = await self.llm.ainvoke(
+                self.main_prompt.format(
+                    context=context,
+                    question=query
+                )
+            )
+            
+            if not response or not response.content:
+                return "Не удалось сгенерировать ответ"
+            
+            # Извлечение точного ответа
+            answer = self.extract_answer(response.content)
+            
+            # Асинхронная верификация ответа
+            verified_response = await self.verification_query_async(query, answer, context)
+            
+            return verified_response
+            
+        except Exception as e:
+            logger.error(f"Ошибка при обработке запроса: {str(e)}")
+            raise
